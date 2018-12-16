@@ -3,11 +3,11 @@ import { Router } from 'express';
 import { version } from '../package.json';
 import spotifyController from './controllers/spotifyController';
 
-export default () => {
+export default ({ config }) => {
   var api = Router();
 
-  api.get('/spotify/search/song', (req, res, next) => {
-    spotifyController.searchSong(req);
+  api.get('/spotify/search/', (req, res, next) => {
+    spotifyController.search(req, res, config);
   });
 
   // base route
