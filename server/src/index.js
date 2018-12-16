@@ -1,14 +1,10 @@
 import express from 'express';
-
-import spotifyController from './controllers/spotifyController';
+import routes from './routes';
 
 const port = 3001; // 3000 used for create-react-app
 let app = express();
 
-app.get('/', (req, res) => res.send('Hello World!'));
-
-app.get('/spotify/search/song', (req, res, next) => {
-  spotifyController.searchSong(req);
-});
+// api router
+app.use('/api', routes());
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!!!`));
