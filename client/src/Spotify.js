@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import io from 'socket.io-client';
 
 export default class Spotify extends Component {
     constructor(props) {
@@ -16,10 +17,17 @@ export default class Spotify extends Component {
             albumName: "Album Name",
             playing: false,
             position: 0,
-            duration: 0
+            duration: 0,
+            loading: false,
+            pinged: false
         };
 
         this.playerCheckInterval = null;
+        this.socket = null;
+    }
+
+    componentDidMount = () => {
+        // put socket io code in here later
     }
 
     submitQuery = (event) => {
@@ -43,7 +51,7 @@ export default class Spotify extends Component {
 
     handleLogin = () => {
         if (this.state.token !== "") { 
-            this.setState({ loggedIn: true });
+            this.setState({ loading: true })
             // start attempting to instantiate the player
             this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
@@ -57,12 +65,32 @@ export default class Spotify extends Component {
         });
         this.player.on('account_error', e => { console.error(e); });
         this.player.on('playback_error', e => { console.error(e); });
-        this.player.on('player_state_changed', state => { console.log(state); });
+        this.player.on('player_state_changed', state => this.autoUpdateState(state));
         this.player.on('ready', data => {
             let { device_id } = data;
             console.log('Ready!');
-            this.setState({ deviceId: device_id });
+            this.setState({ loggedIn: true, deviceId: device_id, loading: false });
         });
+    }
+
+    autoUpdateState = (state) => {
+        if (state !== null) { // null state is sent when music stops
+            const { current_track: currentTrack, position, duration } = state.track_window;
+
+            const trackName = currentTrack.name;
+            const albumName = currentTrack.album.name;
+            const artistName = currentTrack.artists.map(artist => artist.name).join(", ");
+            const playing = !state.paused;
+
+            this.setState({
+                position,
+                duration,
+                trackName,
+                albumName,
+                artistName,
+                playing
+            });
+        }
     }
 
     checkForPlayer = () => {
@@ -84,9 +112,21 @@ export default class Spotify extends Component {
         }
     }
 
+    onPrevClick = () => {
+        this.player.previousTrack();
+    }
+
+    onToggleClick = () => {
+        this.player.togglePlay();
+    }
+
+    onNextClick = () => {
+        this.player.nextTrack();
+    }
+
     render() {
 
-        const { albumName, artistName, trackName, loggedIn, searchResults, searchValue, showingResults, token } = this.state;
+        const { albumName, artistName, trackName, loading, loggedIn, playing, searchResults, searchValue, showingResults, token } = this.state;
 
         return (
         <div style={ styles.spotify }>
@@ -114,6 +154,11 @@ export default class Spotify extends Component {
                 <p>{trackName}</p>
                 <p>{artistName}</p>
                 <p>{albumName}</p>
+                <div>
+                    <button onClick={this.onPrevClick}>Previous</button>
+                    <button onClick={this.onToggleClick}>{playing ? "Pause" : "Play"}</button>
+                    <button onClick={this.onNextClick}>Next</button>
+                </div>
             </div>
             ) :
             (
@@ -136,9 +181,31 @@ export default class Spotify extends Component {
                 >
                 Submit Token
                 </button>
+                {loading && <span>Loading...</span>}
             </div>
             )
             }
+            <br/>
+            <br/>
+            <div style={ styles.spotify.search }>
+                <button onClick={() => {
+                    this.socket = io.connect('/');
+                    this.socket.on('client ping', data => {
+                        this.setState({ pinged: data });
+                        setTimeout(() => this.setState({ pinged: false }), 3000);
+                    })
+                }}>Join Socket</button>
+                <button onClick={() => {
+                    this.socket.disconnect();
+                }}>Leave Socket</button>
+                <button onClick={() => console.log(this.socket)}>Log Socket</button>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('server ping', 'ping');
+                    }
+                }}>Ping Socket</button>
+                { this.state.pinged && <p>server says: {this.state.pinged}</p>}
+            </div>
         </div>
         );
     }

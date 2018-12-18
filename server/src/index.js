@@ -6,6 +6,8 @@ import config from './config/config.json';
 
 const port = 3001; // 3000 used for create-react-app
 let app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 
 // grant spotify access token
 
@@ -30,7 +32,19 @@ spotifyApi.clientCredentialsGrant().then(
   }
 );
 
+io.on('connection', socket => {
+  console.log('connection made!');
+
+  socket.on('server ping', data => {
+    socket.emit('client ping', 'next step: re-evaluate my personal biases');
+  })
+
+  socket.on('disconnect', () => {
+    console.log('disconnected!');
+  })
+})
+
 // api router
 app.use('/api', routes({ config: { spotifyApi } }));
 
-app.listen(port, () => console.log(`Server listening on port ${port}!!!`));
+server.listen(port, () => console.log(`Server listening on port ${port}!!!`));
