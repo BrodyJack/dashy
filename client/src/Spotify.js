@@ -182,29 +182,43 @@ export default class Spotify extends Component {
         <br />
         {loggedIn ? (
           <div style={styles.spotify.search}>
-            <p>{trackName}</p>
-            <p>{artistName}</p>
-            <p>{albumName}</p>
-            <div>
-              <i
-                onClick={this.onPrevClick}
-                className="material-icons hover-icon"
-              >
-                skip_previous
-              </i>
-              <i
-                onClick={this.onToggleClick}
-                className="material-icons hover-icon"
-              >
-                {' '}
-                {playing ? 'pause' : 'play_arrow'}
-              </i>
-              <i
-                onClick={this.onNextClick}
-                className="material-icons hover-icon"
-              >
-                skip_next
-              </i>
+            <div className="spotify-player container-fluid">
+              <div className="row">
+                <p className="col-md-10 col-xl-8 offset-md-1 offset-xl-2 text-center">
+                  {trackName}
+                </p>
+              </div>
+              <div className="row">
+                <p className="col-md-10 col-xl-8 offset-md-1 offset-xl-2 text-center">
+                  {artistName}
+                </p>
+              </div>
+              <div className="row">
+                <p className="col-md-10 col-xl-8 offset-md-1 offset-xl-2 text-center">
+                  {albumName}
+                </p>
+              </div>
+              <div className="row">
+                <i
+                  onClick={this.onPrevClick}
+                  className="material-icons btn btn-secondary text-center hover-icon col-sm-2 offset-sm-2"
+                >
+                  skip_previous
+                </i>
+                <i
+                  onClick={this.onToggleClick}
+                  className="material-icons btn btn-secondary text-center hover-icon col-sm-4"
+                >
+                  {' '}
+                  {playing ? 'pause' : 'play_arrow'}
+                </i>
+                <i
+                  onClick={this.onNextClick}
+                  className="material-icons btn btn-secondary text-center hover-icon col-sm-2"
+                >
+                  skip_next
+                </i>
+              </div>
             </div>
           </div>
         ) : (

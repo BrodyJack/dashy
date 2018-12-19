@@ -38,6 +38,12 @@
   cursor: pointer;
 }
 
+.spotify-player {
+  color: white;
+  background-color: #464646;
+  width: 70%;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
