@@ -189,7 +189,7 @@ export default class Spotify extends Component {
             <br/>
             <div style={ styles.spotify.search }>
                 <button onClick={() => {
-                    this.socket = io.connect('/');
+                    this.socket = io.connect('http://localhost:3001');
                     this.socket.on('client ping', data => {
                         this.setState({ pinged: data });
                         setTimeout(() => this.setState({ pinged: false }), 3000);
