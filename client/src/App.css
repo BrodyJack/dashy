@@ -22,7 +22,9 @@
   color: #61dafb;
 }
 
-.Link, .Link:link, .Link:visited {
+.Link,
+.Link:link,
+.Link:visited {
   text-decoration: none;
   color: white;
   margin-right: 15px;
@@ -30,6 +32,10 @@
 
 .Link:hover {
   color: #61dafb;
+}
+
+.hover-icon:hover {
+  cursor: pointer;
 }
 
 @keyframes App-logo-spin {

@@ -186,18 +186,25 @@ export default class Spotify extends Component {
             <p>{artistName}</p>
             <p>{albumName}</p>
             <div>
-              <button onClick={this.onPrevClick}>
-                <i class="material-icons">skip_previous</i>
-              </button>
-              <button onClick={this.onToggleClick}>
-                <i class="material-icons">
-                  {' '}
-                  {playing ? 'pause' : 'play_arrow'}
-                </i>
-              </button>
-              <button onClick={this.onNextClick}>
-                <i class="material-icons">skip_next</i>
-              </button>
+              <i
+                onClick={this.onPrevClick}
+                className="material-icons hover-icon"
+              >
+                skip_previous
+              </i>
+              <i
+                onClick={this.onToggleClick}
+                className="material-icons hover-icon"
+              >
+                {' '}
+                {playing ? 'pause' : 'play_arrow'}
+              </i>
+              <i
+                onClick={this.onNextClick}
+                className="material-icons hover-icon"
+              >
+                skip_next
+              </i>
             </div>
           </div>
         ) : (
