@@ -193,6 +193,25 @@ export default class Spotify extends Component {
                     this.socket.on('client ping', data => {
                         this.setState({ pinged: data });
                         setTimeout(() => this.setState({ pinged: false }), 3000);
+                    });
+                    this.socket.on('client room ping', data => {
+                        this.setState({ pinged: data });
+                        setTimeout(() => this.setState({ pinged: false }), 3000);
+                    });
+                    this.socket.on('client toggle music', () => {
+                        if (this.player !== null) {
+                            this.player.togglePlay();
+                        }
+                    })
+                    this.socket.on('client previous music', () => {
+                        if (this.player !== null) {
+                            this.player.previousTrack();
+                        }
+                    })
+                    this.socket.on('client next music', () => {
+                        if (this.player !== null) {
+                            this.player.nextTrack();
+                        }
                     })
                 }}>Join Socket</button>
                 <button onClick={() => {
@@ -205,6 +224,38 @@ export default class Spotify extends Component {
                     }
                 }}>Ping Socket</button>
                 { this.state.pinged && <p>server says: {this.state.pinged}</p>}
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('join room', { room: "room01", username: "brody" });
+                    }
+                }}>Join Room</button>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('leave room');
+                    }
+                }}>Leave Room</button>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('room ping');
+                    }
+                }}>Ping Room</button>
+                <br/>
+                <br/>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('toggle music');
+                    }
+                }}>Toggle Music (Room)</button>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('previous music');
+                    }
+                }}>Previous Track (Room)</button>
+                <button onClick={() => {
+                    if (this.socket !== null) {
+                        this.socket.emit('next music');
+                    }
+                }}>Next Track (Room)</button>
             </div>
         </div>
         );
