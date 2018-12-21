@@ -4,7 +4,7 @@ const Home = ({username, changeName}) => (
     <div>
       <span>Home</span>
       <span>{username}</span>
-      <span>{process.env.REACT_APP_TEST}</span>
+      <span>{process.env.REACT_APP_url}</span>
       <button onClick={() => changeName("Brody")}>Click me to change name</button>
     </div>
 );
