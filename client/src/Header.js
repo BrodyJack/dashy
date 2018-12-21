@@ -8,8 +8,10 @@ const Header = ({username}) => (
         <header className="App-header">
         <Link to='/'><img src={logo} className="App-logo" alt="logo" /></Link>
         <Link to='/spotify' className="Link">Spotify</Link>
-        <Link to='/food' className="Link" >Food</Link>
-        <span>{username}</span>
+        <Link to='/food' className="Link">Food</Link>
+        <Link to='/chat' className="Link">Chat</Link>
+        <Link to='/info' className="Link">Info</Link>
+        <span style={{ flex: 1 }}>{username}</span>
         </header>
     </div>
 );

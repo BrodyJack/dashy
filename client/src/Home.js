@@ -1,11 +1,8 @@
 import React from 'react';
 
-const Home = ({username, changeName}) => (
+const Home = (props) => (
     <div>
       <span>Home</span>
-      <span>{username}</span>
-      <span>{process.env.REACT_APP_url}</span>
-      <button onClick={() => changeName("Brody")}>Click me to change name</button>
     </div>
 );
 
