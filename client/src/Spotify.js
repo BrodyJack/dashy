@@ -32,7 +32,7 @@ export default class Spotify extends Component {
 
     submitQuery = (event) => {
         event.preventDefault();
-        let url = new URL('http://localhost:3001/api/spotify/search');
+        let url = new URL('https://server-cagnrneyoa.now.sh/api/spotify/search');
         let params = { searchCriteria: this.state.searchValue };
         url.search = new URLSearchParams(params);
         fetch(url)
@@ -98,6 +98,7 @@ export default class Spotify extends Component {
 
         if (window.Spotify !== null) {
             clearInterval(this.playerCheckInterval);
+            console.log('window object loaded');
 
             this.player = new window.Spotify.Player({
                 name: "Personal Spotify Player",
@@ -189,7 +190,7 @@ export default class Spotify extends Component {
             <br/>
             <div style={ styles.spotify.search }>
                 <button onClick={() => {
-                    this.socket = io.connect('http://localhost:3001');
+                    this.socket = io.connect('https://server-cagnrneyoa.now.sh/');
                     this.socket.on('client ping', data => {
                         this.setState({ pinged: data });
                         setTimeout(() => this.setState({ pinged: false }), 3000);

@@ -1,8 +1,9 @@
 import React from 'react';
 
-const Food = () => (
+const Food = ({username}) => (
     <div>
       <span>Food</span>
+      <span>{username}</span>
     </div>
 );
 

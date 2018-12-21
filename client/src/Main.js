@@ -5,12 +5,12 @@ import Home from './Home';
 import Spotify from './Spotify';
 import Food from './Food';
 
-const Main = () => (
+const Main = (props) => (
     <div>
       <Switch>
-        <Route exact path='/' component={Home}/>
-        <Route path='/spotify' component={Spotify}/>
-        <Route path='/food' component={Food}/>
+        <Route exact path='/' render={routeProps => <Home { ...routeProps } { ...props }/>}/>
+        <Route path='/spotify' render={routeProps => <Spotify { ...routeProps } { ...props }/>}/>
+        <Route path='/food' render={routeProps => <Food { ...routeProps } { ...props }/>}/>
       </Switch>
     </div>
 );
