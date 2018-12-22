@@ -11,7 +11,6 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 
 // cors
-
 app.use(function(req, res, next) {
   if (config.origin.indexOf(req.headers.origin) > -1) {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);

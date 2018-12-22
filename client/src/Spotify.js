@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
-import io from 'socket.io-client';
+import submitSearch from './lib/queries';
+import createEventHandlers from './spotify/setup';
+import { onPrevClick, onToggleClick, onNextClick } from './spotify/playerActions';
 
 export default class Spotify extends Component {
     constructor(props) {
@@ -23,130 +25,63 @@ export default class Spotify extends Component {
         };
 
         this.playerCheckInterval = null;
-        this.socket = null;
     }
 
-    componentDidMount = () => {
-        // put socket io code in here later
-    }
-
-    submitQuery = (event) => {
+    handleSearch = (event) => {
         event.preventDefault();
-        let url = new URL(`${process.env.REACT_APP_url}api/spotify/search`);
-        let params = { searchCriteria: this.state.searchValue };
-        url.search = new URLSearchParams(params);
-        fetch(url)
-        .then(resp => {
-            return resp.json();
-        })
-        .then(json => {
-            let numResults = json.body.tracks.items.length;
-            console.log(JSON.stringify(json.body.tracks.items));
-            this.setState({ searchResults: `Results found: ${numResults}` , showingResults: true })
-        })
-        .catch(err => {
-            // lol yeah right
-        })
+        const { searchValue } = this.state;
+        submitSearch(searchValue)
+            .then(resp => this.setState(resp));
     }
 
     handleLogin = () => {
         if (this.state.token !== "") { 
-            this.setState({ loading: true })
+            this.setState({ loading: true }) // loading is a candidate variable for extracting to higher state
             // start attempting to instantiate the player
             this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
     }
 
-    createEventHandlers = () => {
-        this.player.on('initialization_error', e => { console.error(e); });
-        this.player.on('authentication_error', e => {
-            console.error(e);
-            this.setState({ loggedIn: false });
-        });
-        this.player.on('account_error', e => { console.error(e); });
-        this.player.on('playback_error', e => { console.error(e); });
-        this.player.on('player_state_changed', state => this.autoUpdateState(state));
-        this.player.on('ready', data => {
-            let { device_id } = data;
-            console.log('Ready!');
-            this.setState({ loggedIn: true, deviceId: device_id, loading: false });
-        });
-    }
-
-    autoUpdateState = (state) => {
-        if (state !== null) { // null state is sent when music stops
-            const { current_track: currentTrack, position, duration } = state.track_window;
-
-            const trackName = currentTrack.name;
-            const albumName = currentTrack.album.name;
-            const artistName = currentTrack.artists.map(artist => artist.name).join(", ");
-            const playing = !state.paused;
-
-            this.setState({
-                position,
-                duration,
-                trackName,
-                albumName,
-                artistName,
-                playing
-            });
-        }
-    }
+    handleSpotifyState = (stateObject) => this.setState(stateObject);
 
     checkForPlayer = () => {
         const { token } = this.state;
+        const { playerStateHandler } = this.props;
 
         if (window.Spotify !== null) {
             clearInterval(this.playerCheckInterval);
             console.log('window object loaded');
 
-            this.player = new window.Spotify.Player({
+            let player = new window.Spotify.Player({
                 name: "Personal Spotify Player",
                 getOAuthToken: cb => { cb(token); },
             });
 
             // Create event handlers
-            this.createEventHandlers();
+            createEventHandlers(player, this.handleSpotifyState);
 
             // connect
-            this.player.connect();
+            player.connect();
+            
+            // Set player to our state
+            playerStateHandler(player);
         }
-    }
-
-    onPrevClick = () => {
-        this.player.previousTrack();
-    }
-
-    onToggleClick = () => {
-        this.player.togglePlay();
-    }
-
-    onNextClick = () => {
-        this.player.nextTrack();
     }
 
     render() {
 
         const { albumName, artistName, trackName, loading, loggedIn, playing, searchResults, searchValue, showingResults, token } = this.state;
+        const { pinged, player, socket, socketStateHandler } = this.props;
 
         return (
         <div style={ styles.spotify }>
-            <div style={ styles.spotify.search }>
-                <input 
-                    type='text' 
-                    value={searchValue}
-                    onChange={(event) => this.setState({ searchValue: event.target.value })} 
-                    style={ styles.spotify.search.input }
-                />
-                <button 
-                    type='button' 
-                    onClick={this.submitQuery}
-                    style={ styles.spotify.search.button }
-                >
-                Search
-                </button>
-                <SearchResults show={showingResults} content={searchResults}/>
-            </div>
+            <SpotifySearch 
+                searchValue={searchValue}
+                showingResults={showingResults}
+                searchResults={searchResults}
+                handleSearch={this.handleSearch}
+                handleSpotifyState={this.handleSpotifyState}
+            />
             <br/>
             <br/>
             {loggedIn ?
@@ -156,9 +91,9 @@ export default class Spotify extends Component {
                 <p>{artistName}</p>
                 <p>{albumName}</p>
                 <div>
-                    <button onClick={this.onPrevClick}>Previous</button>
-                    <button onClick={this.onToggleClick}>{playing ? "Pause" : "Play"}</button>
-                    <button onClick={this.onNextClick}>Next</button>
+                    <button onClick={() => onPrevClick(player)}>Previous</button>
+                    <button onClick={() => onToggleClick(player)}>{playing ? "Pause" : "Play"}</button>
+                    <button onClick={() => onNextClick(player)}>Next</button>
                 </div>
             </div>
             ) :
@@ -190,71 +125,46 @@ export default class Spotify extends Component {
             <br/>
             <div style={ styles.spotify.search }>
                 <button onClick={() => {
-                    this.socket = io.connect(`${process.env.REACT_APP_url}`);
-                    this.socket.on('client ping', data => {
-                        this.setState({ pinged: data });
-                        setTimeout(() => this.setState({ pinged: false }), 3000);
-                    });
-                    this.socket.on('client room ping', data => {
-                        this.setState({ pinged: data });
-                        setTimeout(() => this.setState({ pinged: false }), 3000);
-                    });
-                    this.socket.on('client toggle music', () => {
-                        if (this.player !== null) {
-                            this.player.togglePlay();
-                        }
-                    })
-                    this.socket.on('client previous music', () => {
-                        if (this.player !== null) {
-                            this.player.previousTrack();
-                        }
-                    })
-                    this.socket.on('client next music', () => {
-                        if (this.player !== null) {
-                            this.player.nextTrack();
-                        }
-                    })
-                }}>Join Socket</button>
-                <button onClick={() => {
-                    this.socket.disconnect();
+                    socket.disconnect();
+                    socketStateHandler({ socket: null });
                 }}>Leave Socket</button>
-                <button onClick={() => console.log(this.socket)}>Log Socket</button>
+                <button onClick={() => console.log(socket)}>Log Socket</button>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('server ping', 'ping');
+                    if (socket !== null) {
+                        socket.emit('server ping', 'ping');
                     }
                 }}>Ping Socket</button>
-                { this.state.pinged && <p>server says: {this.state.pinged}</p>}
+                { pinged && <p>server says: {pinged}</p>}
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('join room', { room: "room01", username: "brody" });
+                    if (socket !== null) {
+                        socket.emit('join room', { room: "room01", username: "brody" });
                     }
                 }}>Join Room</button>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('leave room');
+                    if (socket !== null) {
+                        socket.emit('leave room');
                     }
                 }}>Leave Room</button>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('room ping');
+                    if (socket !== null) {
+                        socket.emit('room ping');
                     }
                 }}>Ping Room</button>
                 <br/>
                 <br/>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('toggle music');
+                    if (socket !== null) {
+                        socket.emit('toggle music');
                     }
                 }}>Toggle Music (Room)</button>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('previous music');
+                    if (socket !== null) {
+                        socket.emit('previous music');
                     }
                 }}>Previous Track (Room)</button>
                 <button onClick={() => {
-                    if (this.socket !== null) {
-                        this.socket.emit('next music');
+                    if (socket !== null) {
+                        socket.emit('next music');
                     }
                 }}>Next Track (Room)</button>
             </div>
@@ -270,6 +180,25 @@ const SearchResults = ({show, content}) => (
         <span>{content}</span> :
         <span>Nothing searched...</span>
         }
+    </div>
+);
+
+const SpotifySearch = ({searchValue, showingResults, searchResults, handleSearch, handleSpotifyState}) => (
+    <div style={ styles.spotify.search }>
+        <input 
+            type='text' 
+            value={searchValue}
+            onChange={(event) => handleSpotifyState({ searchValue: event.target.value })} 
+            style={ styles.spotify.search.input }
+        />
+        <button 
+            type='button' 
+            onClick={handleSearch}
+            style={ styles.spotify.search.button }
+        >
+        Search
+        </button>
+        <SearchResults show={showingResults} content={searchResults}/>
     </div>
 );
 
