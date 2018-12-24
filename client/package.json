@@ -12,8 +12,8 @@
   "scripts": {
     "start": "npm run startdev",
     "startdev": "REACT_APP_url=http://localhost:3001/ react-scripts start",
-    "startserver": "REACT_APP_url=https://server-cagnrneyoa.now.sh/ react-scripts start",
-    "build": "REACT_APP_url=https://server-cagnrneyoa.now.sh/ react-scripts build",
+    "startserver": "REACT_APP_url=https://server-vsskdwztjd.now.sh/ react-scripts start",
+    "build": "REACT_APP_url=https://server-vsskdwztjd.now.sh/ react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

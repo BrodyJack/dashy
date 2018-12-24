@@ -1,4 +1,4 @@
-let createEventHandlers = (player, handleSpotifyState) => {
+export let createEventHandlers = (player, handleSpotifyState) => {
     player.on('initialization_error', e => { console.error(e); });
     player.on('authentication_error', e => {
         console.error(e);
@@ -14,7 +14,17 @@ let createEventHandlers = (player, handleSpotifyState) => {
     });
 };
 
-let autoUpdateState = (state, handleSpotifyState) => {
+// May be needed later when implementing the ability for spotify to play site-wide
+// export let removeEventListeners = (player, handleSpotifyState) => {
+//     player.removeListener('initialization_error');
+//     player.removeListener('authentication_error');
+//     player.removeListener('account_error');
+//     player.removeListener('playback_error');
+//     player.removeListener('player_state_changed');
+//     player.removeListener('ready');
+// };
+
+export let autoUpdateState = (state, handleSpotifyState) => {
     if (state !== null) { // null state is sent when music stops
         const { current_track: currentTrack, position, duration } = state.track_window;
 
@@ -33,5 +43,3 @@ let autoUpdateState = (state, handleSpotifyState) => {
         });
     }
 };
-
-export default createEventHandlers;

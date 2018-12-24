@@ -11,6 +11,7 @@ const Info = (props) => {
             </p>
             <p>Current room: {currentRoom} || Please visit chat or spotify to modify your room</p>
             <p>Using server with url: {process.env.REACT_APP_url}</p>
+            <p>Click to force delete localstorage spotify key: <button onClick={() => window.localStorage.removeItem('spotifyKey')}>Delete</button></p>
         </div>
     );
 }
