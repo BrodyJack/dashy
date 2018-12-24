@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import submitSearch from './lib/queries';
-import createEventHandlers from './spotify/setup';
+import { createEventHandlers } from './spotify/setup';
 import { onPrevClick, onToggleClick, onNextClick } from './spotify/playerActions';
 
 export default class Spotify extends Component {
@@ -25,6 +25,22 @@ export default class Spotify extends Component {
         };
 
         this.playerCheckInterval = null;
+    }
+
+    componentDidMount = async () => {
+        if (window.localStorage.spotifyKey) {
+            if (this.props.player === null) {
+                await this.setState({ token: window.localStorage.spotifyKey });
+                this.handleLogin();
+            }
+        }
+    }
+
+    componentWillUnmount = () => {
+        if (this.props.player) {
+            this.props.player.disconnect();
+            this.props.playerStateHandler(null);
+        }
     }
 
     handleSearch = (event) => {
