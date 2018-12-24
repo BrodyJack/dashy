@@ -7,8 +7,18 @@ import config from './config/config.json';
 const port = 3001; // 3000 used for create-react-app
 let app = express();
 
-// grant spotify access token
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 
+// cors
+app.use(function(req, res, next) {
+  if (config.origin.indexOf(req.headers.origin) > -1) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  next();
+});
+
+// grant spotify access token
 var spotifyApi = new SpotifyWebApi({
   clientId: config.spotify.clientId,
   clientSecret: config.spotify.clientSecret
@@ -30,7 +40,55 @@ spotifyApi.clientCredentialsGrant().then(
   }
 );
 
+let rooms = {};
+
+io.on('connection', socket => {
+  console.log('connection made!');
+  let room = null;
+
+  socket.on('server ping', data => {
+    socket.emit('client ping', 'next step: re-evaluate my personal biases');
+    console.log(room);
+  });
+
+  socket.on('join room', data => {
+    console.log(data);
+    socket.join(data.room);
+    room = data.room;
+  });
+
+  socket.on('leave room', () => {
+    console.log('leaving room');
+    socket.leave(room);
+    room = null;
+  });
+
+  socket.on('room ping', () => {
+    console.log(socket.rooms);
+    io.to(room).emit('client room ping', 'hello room ' + room);
+  });
+
+  socket.on('toggle music', () => {
+    console.log('toggling playback...');
+    io.to(room).emit('client toggle music');
+  });
+
+  socket.on('previous music', () => {
+    console.log('previous track...');
+    io.to(room).emit('client previous music');
+  });
+
+  socket.on('next music', () => {
+    console.log('next track...');
+    io.to(room).emit('client next music');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('disconnected!');
+  });
+});
+
 // api router
 app.use('/api', routes({ config: { spotifyApi } }));
 
-app.listen(port, () => console.log(`Server listening on port ${port}!!!`));
+server.listen(port, () => console.log(`Server listening on port ${port}!!!`));

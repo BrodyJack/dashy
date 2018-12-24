@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Food = () => (
+const Food = (props) => (
     <div>
       <span>Food</span>
     </div>

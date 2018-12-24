@@ -1,4 +1,7 @@
 import React, { Component } from 'react';
+import submitSearch from './lib/queries';
+import createEventHandlers from './spotify/setup';
+import { onPrevClick, onToggleClick, onNextClick } from './spotify/playerActions';
 
 export default class Spotify extends Component {
     constructor(props) {
@@ -16,96 +19,69 @@ export default class Spotify extends Component {
             albumName: "Album Name",
             playing: false,
             position: 0,
-            duration: 0
+            duration: 0,
+            loading: false,
+            pinged: false
         };
 
         this.playerCheckInterval = null;
     }
 
-    submitQuery = (event) => {
+    handleSearch = (event) => {
         event.preventDefault();
-        let url = new URL('http://localhost:3001/api/spotify/search');
-        let params = { searchCriteria: this.state.searchValue };
-        url.search = new URLSearchParams(params);
-        fetch(url)
-        .then(resp => {
-            return resp.json();
-        })
-        .then(json => {
-            let numResults = json.body.tracks.items.length;
-            console.log(JSON.stringify(json.body.tracks.items));
-            this.setState({ searchResults: `Results found: ${numResults}` , showingResults: true })
-        })
-        .catch(err => {
-            // lol yeah right
-        })
+        const { searchValue } = this.state;
+        submitSearch(searchValue)
+            .then(resp => this.setState(resp));
     }
 
     handleLogin = () => {
         if (this.state.token !== "") { 
-            this.setState({ loggedIn: true });
+            this.setState({ loading: true }) // loading is a candidate variable for extracting to higher state
             // start attempting to instantiate the player
             this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
     }
 
-    createEventHandlers = () => {
-        this.player.on('initialization_error', e => { console.error(e); });
-        this.player.on('authentication_error', e => {
-            console.error(e);
-            this.setState({ loggedIn: false });
-        });
-        this.player.on('account_error', e => { console.error(e); });
-        this.player.on('playback_error', e => { console.error(e); });
-        this.player.on('player_state_changed', state => { console.log(state); });
-        this.player.on('ready', data => {
-            let { device_id } = data;
-            console.log('Ready!');
-            this.setState({ deviceId: device_id });
-        });
-    }
+    handleSpotifyState = (stateObject) => this.setState(stateObject);
 
     checkForPlayer = () => {
         const { token } = this.state;
+        const { playerStateHandler } = this.props;
 
         if (window.Spotify !== null) {
             clearInterval(this.playerCheckInterval);
+            console.log('window object loaded');
 
-            this.player = new window.Spotify.Player({
+            let player = new window.Spotify.Player({
                 name: "Personal Spotify Player",
                 getOAuthToken: cb => { cb(token); },
             });
 
             // Create event handlers
-            this.createEventHandlers();
+            createEventHandlers(player, this.handleSpotifyState);
 
             // connect
-            this.player.connect();
+            player.connect();
+            
+            // Set player to our state
+            playerStateHandler(player);
         }
     }
 
     render() {
 
-        const { albumName, artistName, trackName, loggedIn, searchResults, searchValue, showingResults, token } = this.state;
+        const { albumName, artistName, trackName, loading, loggedIn, playing, searchResults, searchValue, showingResults, token } = this.state;
+        const { pinged, player, socket, socketStateHandler } = this.props;
 
         return (
         <div style={ styles.spotify }>
-            <div style={ styles.spotify.search }>
-                <input 
-                    type='text' 
-                    value={searchValue}
-                    onChange={(event) => this.setState({ searchValue: event.target.value })} 
-                    style={ styles.spotify.search.input }
-                />
-                <button 
-                    type='button' 
-                    onClick={this.submitQuery}
-                    style={ styles.spotify.search.button }
-                >
-                Search
-                </button>
-                <SearchResults show={showingResults} content={searchResults}/>
-            </div>
+            <SpotifySearch 
+                searchValue={searchValue}
+                showingResults={showingResults}
+                searchResults={searchResults}
+                handleSearch={this.handleSearch}
+                handleSpotifyState={this.handleSpotifyState}
+            />
             <br/>
             <br/>
             {loggedIn ?
@@ -114,6 +90,11 @@ export default class Spotify extends Component {
                 <p>{trackName}</p>
                 <p>{artistName}</p>
                 <p>{albumName}</p>
+                <div>
+                    <button onClick={() => onPrevClick(player)}>Previous</button>
+                    <button onClick={() => onToggleClick(player)}>{playing ? "Pause" : "Play"}</button>
+                    <button onClick={() => onNextClick(player)}>Next</button>
+                </div>
             </div>
             ) :
             (
@@ -136,9 +117,57 @@ export default class Spotify extends Component {
                 >
                 Submit Token
                 </button>
+                {loading && <span>Loading...</span>}
             </div>
             )
             }
+            <br/>
+            <br/>
+            <div style={ styles.spotify.search }>
+                <button onClick={() => {
+                    socket.disconnect();
+                    socketStateHandler({ socket: null });
+                }}>Leave Socket</button>
+                <button onClick={() => console.log(socket)}>Log Socket</button>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('server ping', 'ping');
+                    }
+                }}>Ping Socket</button>
+                { pinged && <p>server says: {pinged}</p>}
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('join room', { room: "room01", username: "brody" });
+                    }
+                }}>Join Room</button>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('leave room');
+                    }
+                }}>Leave Room</button>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('room ping');
+                    }
+                }}>Ping Room</button>
+                <br/>
+                <br/>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('toggle music');
+                    }
+                }}>Toggle Music (Room)</button>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('previous music');
+                    }
+                }}>Previous Track (Room)</button>
+                <button onClick={() => {
+                    if (socket !== null) {
+                        socket.emit('next music');
+                    }
+                }}>Next Track (Room)</button>
+            </div>
         </div>
         );
     }
@@ -151,6 +180,25 @@ const SearchResults = ({show, content}) => (
         <span>{content}</span> :
         <span>Nothing searched...</span>
         }
+    </div>
+);
+
+const SpotifySearch = ({searchValue, showingResults, searchResults, handleSearch, handleSpotifyState}) => (
+    <div style={ styles.spotify.search }>
+        <input 
+            type='text' 
+            value={searchValue}
+            onChange={(event) => handleSpotifyState({ searchValue: event.target.value })} 
+            style={ styles.spotify.search.input }
+        />
+        <button 
+            type='button' 
+            onClick={handleSearch}
+            style={ styles.spotify.search.button }
+        >
+        Search
+        </button>
+        <SearchResults show={showingResults} content={searchResults}/>
     </div>
 );
 
